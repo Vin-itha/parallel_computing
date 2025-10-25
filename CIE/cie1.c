@@ -1,20 +1,39 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <omp.h>
+#include <time.h>
+
+int isPrime(int num) {
+    if (num <= 1) return 0;
+    for (int i = 2; i * i <= num; ++i)
+        if (num % i == 0) return 0;
+    return 1;
+}
 
 int main() {
-    int thread_id, team_size;
+    int n = 20;
+    int serialCount = 0, parallelCount = 0;
+    double start, end;
 
-    omp_set_dynamic(0);
-
-    omp_set_num_threads(4);
-
-    #pragma omp parallel
-    {
-        thread_id = omp_get_thread_num();
-        team_size = omp_get_num_threads();
-
-        printf("Thread id = %d , team size = %d\n", thread_id, team_size);
+    start = omp_get_wtime();
+    for (int i = 1; i <= n; ++i) {
+        if (isPrime(i)) serialCount++;
     }
+    end = omp_get_wtime();
+    double serialTime = end - start;
+
+    start = omp_get_wtime();
+    #pragma omp parallel for schedule(dynamic) reduction(+:parallelCount)
+    for (int i = 1; i <= n; ++i) {
+        if (isPrime(i)) parallelCount++;
+    }
+    end = omp_get_wtime();
+    double parallelTime = end - start;
+
+    printf("Serial Count of primes = %d\n", serialCount);
+    printf("Parallel Count of primes = %d\n", parallelCount);
+    printf("Execution time (serial): %.5f seconds\n", serialTime);
+    printf("Execution time (parallel): %.5f seconds\n", parallelTime);
 
     return 0;
 }
